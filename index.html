@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <title>Mon Club près de chez moi</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://monclubpresdechezmoi.com/images/mcpdcm-small.png"
+      rel="shortcut icon"
+    />
+    <link
+      href="https://monclubpresdechezmoi.com/images/mcpdcm/apple-touch-icon.png"
+      rel="apple-touch-icon"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap"
+    />
+
+    <style>
+      *,
+      body {
+        font-family: "Source Sans Pro", sans-serif;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      .map-container {
+        position: relative;
+      }
+
+      #map {
+        width: 100%;
+        height: 100vh;
+      }
+
+      .floating-panel {
+        position: fixed;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 0 25px 0;
+        width: 400px;
+        border-radius: 10px;
+        box-shadow: 0 2px 9px 0 rgba(173, 173, 173, 0.5);
+        top: 30px;
+        left: 30px;
+        bottom: 30px;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 100;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .floating-panel > * {
+        pointer-events: auto; /* Make children clickable */
+      }
+
+      .floating-panel__header {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        z-index: 2;
+        padding: 0 25px;
+        position: relative;
+      }
+
+      .floating-panel__logo-container {
+        margin-bottom: 25px;
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        align-items: center;
+      }
+
+      .floating-panel__logo--left,
+      .floating-panel__logo--right {
+        height: 50px;
+      }
+
+      .floating-panel__logo--left {
+        margin-right: 36px;
+      }
+
+      .floating-panel__input-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+
+      .floating-panel__form {
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+
+      .floating-panel__input-wrapper {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        border-radius: 25px;
+        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 5px 10px;
+        background-color: white;
+      }
+
+      .floating-panel__input {
+        flex-grow: 1;
+        border: none;
+        outline: none;
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .floating-panel__menu-icon,
+      .floating-panel__clear-input {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: grey;
+      }
+
+      .floating-panel__menu-icon {
+        margin-right: 8px;
+        margin-left: 2px;
+        font-weight: bold;
+      }
+
+      .floating-panel__clear-input {
+        background-color: grey;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 10px;
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin-left: 10px;
+        margin-right: 6px;
+      }
+
+      .floating-panel__clear-input span.clear-icon {
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+      }
+
+      .floating-panel__autocomplete-suggestions {
+        box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.15);
+        font-size: 14px;
+        position: absolute;
+        top: calc(100% + 20px);
+        left: 25px;
+        width: calc(100% - 50px);
+        background-color: white;
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+      }
+
+      .floating-panel__autocomplete-suggestions div {
+        padding: 10px;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .gruddo__search__form__autocomplete__highlight {
+        background-color: #f0f0f0;
+      }
+      .floating-panel__autocomplete-suggestions div:hover {
+        background-color: #f0f0f0;
+      }
+
+      .floating-panel__club-list {
+        overflow-y: auto;
+        padding: 0 15px;
+        flex-grow: 1;
+      }
+
+      .club {
+        margin-bottom: 15px;
+      }
+
+      .club button {
+        background-color: #3498db;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      .club button:hover {
+        background-color: #2980b9;
+      }
+
+      .side-panel {
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 200;
+        top: 0;
+        left: 0;
+        background-color: white;
+        overflow-x: hidden;
+        transition: 0.3s;
+        padding-top: 60px;
+      }
+
+      .overlay {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 150;
+        display: none;
+      }
+
+      .club-list__store {
+        display: flex;
+        flex-direction: column;
+        padding: 10px 15px;
+        border-bottom: 3px solid #f0f0f0;
+      }
+
+      .club-list__store.active {
+        background-color: #f0f0f0;
+      }
+
+      .club-list__store__container {
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .club-list__store__image {
+        width: 50px;
+        height: 50px;
+        margin-right: 15px;
+        display: none;
+      }
+
+      .club-list__store__details {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .club-list__store__details p {
+        margin: 0px;
+        padding: 0px;
+        font-size: 14px;
+        padding-bottom: 8px;
+      }
+
+      .club-list__store__button {
+        display: flex;
+        justify-content: center;
+      }
+
+      .club-list__store__button button {
+        background-color: white;
+        color: #007aff;
+        padding: 5px 10px;
+        border: 1px solid #007aff;
+        cursor: pointer;
+        border-radius: 50px;
+      }
+
+      .club-list__store__button button:hover {
+        background-color: #007aff;
+        color: white;
+      }
+
+      .side-panel__tabs {
+        display: flex;
+        justify-content: space-around;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 10px;
+      }
+
+      .side-panel__tab {
+        background: none;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .side-panel__tab:hover {
+        border-bottom: 2px solid #3498db;
+      }
+
+      .side-panel__content {
+        padding: 20px;
+      }
+
+      .side-panel__content ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .side-panel__content li {
+        padding: 2px 0;
+        cursor: pointer;
+        font-size: 14px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .side-panel__content li:hover {
+        background-color: #f0f0f0;
+      }
+      .floating-panel__filter-button-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0px;
+        margin: 20px;
+        margin-bottom: 0px;
+        padding-left: 4px;
+      }
+
+      .floating-panel__filter-button,
+      .floating-panel__type-button,
+      .floating-panel__tag-button {
+        padding: 5px 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+        margin-left: 1px;
+      }
+
+      .floating-panel__filter-button {
+        background: #e7343f;
+        color: white;
+      }
+
+      .floating-panel__filter-button:hover {
+      }
+
+      .floating-panel__type-button {
+        background: yellow;
+        color: black;
+      }
+
+      .floating-panel__tag-button {
+        background: green;
+        color: white;
+      }
+
+      .clear-icon {
+        background-color: white;
+        border-radius: 50%;
+        color: black;
+        font-size: 14px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .gruddo__search__get-location {
+        position: absolute;
+        bottom: 36px;
+        right: 36px;
+        border: none;
+        cursor: pointer;
+        z-index: 200;
+        background-color: transparent;
+        padding: 0;
+      }
+      .geoloc-icon {
+        background-image: url("https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-cookieless-v2-2x.png");
+        display: inline-block;
+        width: 36px; /* Width of a single icon */
+        height: 36px; /* Height of a single icon */
+        background-repeat: no-repeat;
+        background-color: transparent;
+        background-position: -288px; /* Position to show the second icon */
+        /* background-size: 135px 27px;  */
+      }
+
+      .searchHereButton {
+        position: absolute;
+        bottom: 50px; /* Adjust as needed */
+        right: 40%; /* Adjust as needed */
+        padding: 4px 8px;
+        background: white; /* Adjust as needed */
+        color: black;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        /* box-shadow: 0 2px 9px 0 rgba(173, 173, 173, 0.5); */
+        z-index: 200; /* Ensure it is above other elements */
+      }
+
+      /* .geocodeButton {
+        position: absolute;
+        top: 110px; 
+        right: 0px; 
+        padding: 4px 8px;
+        background: white; 
+        color: blue;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 200; 
+      } */
+
+      .highlight {
+        background-color: yellow;
+      }
+      /* Hidden input box */
+      #filter-side-panel-search {
+        position: absolute;
+        left: -9999px;
+      }
+      .floating-panel__club-list-container {
+        overflow-y: auto;
+      }
+
+      @media (max-width: 1024px) {
+        .floating-panel {
+          width: 100%;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          border-radius: 0;
+          background-color: transparent;
+          margin-top: 0px;
+          padding-top: 10px;
+          pointer-events: none;
+        }
+        .floating-panel__logo-container {
+          display: none;
+        }
+        .floating-panel__input-wrapper {
+          margin-right: 28px;
+        }
+        #map {
+          height: 60vh;
+        }
+
+        .floating-panel__club-list-container {
+          position: absolute;
+          top: 60vh; /* Align with the bottom of the map */
+          overflow-y: auto;
+          width: 100%;
+          height: 40vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="store-data"
+      data-woosmap-key="woos-6a97a5f5-da3b-3f82-b412-62300fb7988f"
+    ></div>
+
+    <!-- Floating Panel -->
+    <div id="floating-panel" class="floating-panel">
+      <div class="floating-panel__header">
+        <a href="./" class="floating-panel__logo-container">
+          <img
+            src="MCPDCM.png"
+            alt="Mon Club près de chez moi"
+            class="floating-panel__logo floating-panel__logo--left"
+          />
+          <img
+            src="CNOSF_LOGO.svg"
+            alt="CNOSF Logo"
+            class="floating-panel__logo floating-panel__logo--right"
+          />
+        </a>
+        <div class="floating-panel__input-container">
+          <form id="location-search" class="floating-panel__form">
+            <div class="floating-panel__input-wrapper">
+              <!-- <button class="floating-panel__menu-icon" onclick="openMenu()"> -->
+              <button class="floating-panel__menu-icon" onclick="openMenu()">
+                ☰
+              </button>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="Entrer un lieu ou une adresse"
+                class="floating-panel__input"
+              />
+              <button
+                type="button"
+                id="clearInput"
+                class="floating-panel__clear-input"
+                style="display: none"
+              >
+                <span class="clear-icon">X</span>
+              </button>
+            </div>
+          </form>
+        </div>
+        <div
+          id="autocompleteSuggestions"
+          class="floating-panel__autocomplete-suggestions"
+        ></div>
+      </div>
+
+      <div class="floating-panel__filter-button-container">
+        <button
+          class="floating-panel__filter-button"
+          onclick="openFilterMenu()"
+        >
+          Filtrer
+        </button>
+
+        <!-- Button for currentType if not null -->
+        <button
+          class="floating-panel__type-button"
+          id="typeButton"
+          onclick="clearCurrentType()"
+          style="display: none"
+        >
+          <span id="typeButtonText"></span>
+          <span class="clear-icon">X</span>
+        </button>
+
+        <!-- Button for currentTag if not null -->
+        <button
+          class="floating-panel__tag-button"
+          id="tagButton"
+          onclick="clearCurrentTag()"
+          style="display: none"
+        >
+          <span id="tagButtonText"></span>
+          <span class="clear-icon">X</span>
+        </button>
+      </div>
+      <div class="floating-panel__club-list-container">
+        <!-- <button
+          id="gruddo__search__get-location"
+          class="gruddo__search__get-location"
+          onclick="getLocation()"
+        >
+          Clubs autour de moi
+        </button> -->
+        <div id="club-list" class="floating-panel__club-list"></div>
+      </div>
+      <!-- <div id="club-list" class="floating-panel__club-list"></div> -->
+    </div>
+    <div id="map-container" class="map-container">
+      <div id="map"></div>
+      <button
+        id="searchHereButton"
+        class="searchHereButton"
+        onclick="searchHere()"
+      >
+        Rechercher dans cette zone
+      </button>
+
+      <button
+        id="gruddo__search__get-location"
+        class="gruddo__search__get-location"
+        onclick="getLocation()"
+      >
+        <span class="geoloc-icon"></span>
+      </button>
+    </div>
+    <!-- Sliding Menu Panel -->
+    <div id="side-panel" class="side-panel"></div>
+
+    <!-- Filter Side Panel -->
+    <div id="filter-side-panel" class="side-panel">
+      <div class="side-panel__tabs">
+        <button class="side-panel__tab" onclick="showTab('sports')">
+          Sports
+        </button>
+        <!-- <button class="side-panel__tab" onclick="showTab('lieux')">
+          Lieux
+        </button> -->
+      </div>
+      <div id="sports" class="side-panel__content">
+        <input type="text" id="filter-side-panel-search" />
+        <ul>
+          <li onclick='filterByType("Acrobaties aériennes")'>
+            Acrobaties aériennes
+          </li>
+          <li onclick='filterByType("Aérobic")'>Aérobic</li>
+          <li onclick='filterByType("Aérostation")'>Aérostation</li>
+          <li onclick='filterByType("Aéronautique")'>Aéronautique</li>
+          <li onclick='filterByType("Aïkido")'>Aïkido</li>
+          <li onclick='filterByType("Alpinisme")'>Alpinisme</li>
+          <li onclick='filterByType("Apnée")'>Apnée</li>
+          <li onclick='filterByType("Arts énergétiques")'>Arts énergétiques</li>
+          <li onclick='filterByType("Arts martiaux")'>Arts martiaux</li>
+          <li onclick='filterByType("Arts martiaux chinois")'>
+            Arts martiaux chinois
+          </li>
+          <li onclick='filterByType("Athlétisme")'>Athlétisme</li>
+          <li onclick='filterByType("Aviron")'>Aviron</li>
+          <li onclick='filterByType("Baby Gym")'>Baby Gym</li>
+          <li onclick='filterByType("Badminton")'>Badminton</li>
+          <li onclick='filterByType("Bagua Zhang")'>Bagua Zhang</li>
+          <li onclick='filterByType("Ball-trap")'>Ball-trap</li>
+          <li onclick='filterByType("Basketball")'>Basketball</li>
+          <li onclick='filterByType("Baseball")'>Baseball</li>
+          <li onclick='filterByType("Baseball5")'>Baseball5</li>
+          <li onclick='filterByType("Beach handball")'>Beach handball</li>
+          <li onclick='filterByType("Beach rugby")'>Beach rugby</li>
+          <li onclick='filterByType("Beach soccer")'>Beach soccer</li>
+          <li onclick='filterByType("Beach tennis")'>Beach tennis</li>
+          <li onclick='filterByType("Beach volley")'>Beach volley</li>
+          <li onclick='filterByType("Billard")'>Billard</li>
+          <li onclick='filterByType("Biathlon")'>Biathlon</li>
+          <li onclick='filterByType("Bloc (escalade)")'>Bloc (escalade)</li>
+          <li onclick='filterByType("BMX")'>BMX</li>
+          <li onclick='filterByType("Bobsleigh")'>Bobsleigh</li>
+          <li onclick='filterByType("Bodyboard")'>Bodyboard</li>
+          <li onclick='filterByType("Bodysurf")'>Bodysurf</li>
+          <li onclick='filterByType("Boomerang")'>Boomerang</li>
+          <li onclick='filterByType("Bowling")'>Bowling</li>
+          <li onclick='filterByType("Boxe")'>Boxe</li>
+          <li onclick='filterByType("Breakdance")'>Breakdance</li>
+          <li onclick='filterByType("Canoë")'>Canoë</li>
+          <li onclick='filterByType("Canoë polo")'>Canoë polo</li>
+          <li onclick='filterByType("Canoë slalom")'>Canoë slalom</li>
+          <li onclick='filterByType("Canoë sprint")'>Canoë sprint</li>
+          <li onclick='filterByType("Canyoning")'>Canyoning</li>
+          <li onclick='filterByType("Capoeira")'>Capoeira</li>
+          <li onclick='filterByType("Char à voile")'>Char à voile</li>
+          <li onclick='filterByType("Cheerleading")'>Cheerleading</li>
+          <li onclick='filterByType("Condition physique")'>
+            Condition physique
+          </li>
+          <li onclick='filterByType("Combiné nordique")'>Combiné nordique</li>
+          <li onclick='filterByType("Course automobile")'>Course automobile</li>
+          <li onclick='filterByType("Course d&apos;aventure")'>
+            Course d&apos;aventure
+          </li>
+          <li onclick='filterByType("Course d&apos;endurance")'>
+            Course d&apos;endurance
+          </li>
+          <li onclick='filterByType("Course d&apos;orientation")'>
+            Course d&apos;orientation
+          </li>
+          <li onclick='filterByType("Course de fond")'>Course de fond</li>
+          <li onclick='filterByType("Course de motos")'>Course de motos</li>
+          <li onclick='filterByType("Course sur route")'>Course sur route</li>
+          <li onclick='filterByType("Course à pied")'>Course à pied</li>
+          <li onclick='filterByType("Cross training")'>Cross training</li>
+          <li onclick='filterByType("Crossfit")'>Crossfit</li>
+          <li onclick='filterByType("Curling")'>Curling</li>
+          <li onclick='filterByType("Cyclisme")'>Cyclisme</li>
+          <li onclick='filterByType("Cyclisme sur piste")'>
+            Cyclisme sur piste
+          </li>
+          <li onclick='filterByType("Cyclisme sur route")'>
+            Cyclisme sur route
+          </li>
+          <li onclick='filterByType("Cyclo-cross")'>Cyclo-cross</li>
+          <li onclick='filterByType("Cyclotourisme")'>Cyclotourisme</li>
+          <li onclick='filterByType("Danse")'>Danse</li>
+          <li onclick='filterByType("Danse du lion")'>Danse du lion</li>
+          <li onclick='filterByType("Danse sur glace")'>Danse sur glace</li>
+          <li onclick='filterByType("Daoyin Fa")'>Daoyin Fa</li>
+          <li onclick='filterByType("Deck hockey")'>Deck hockey</li>
+          <li onclick='filterByType("Disque volant")'>Disque volant</li>
+          <li onclick='filterByType("Duathlon")'>Duathlon</li>
+          <li onclick='filterByType("Échecs")'>Échecs</li>
+          <li onclick='filterByType("Entraînement au poids du corps")'>
+            Entraînement au poids du corps
+          </li>
+          <li onclick='filterByType("Entraînement cardio")'>
+            Entraînement cardio
+          </li>
+          <li onclick='filterByType("Escalade")'>Escalade</li>
+          <li onclick='filterByType("Escalade sportive")'>Escalade sportive</li>
+          <li onclick='filterByType("Escrime")'>Escrime</li>
+          <li onclick='filterByType("Esports")'>Esports</li>
+          <li onclick='filterByType("Équitation")'>Équitation</li>
+          <li onclick='filterByType("Flag football")'>Flag football</li>
+          <li onclick='filterByType("Floorball")'>Floorball</li>
+          <li onclick='filterByType("Foot à 7")'>Foot à 7</li>
+          <li onclick='filterByType("Football")'>Football</li>
+          <li onclick='filterByType("Football à cinq")'>Football à cinq</li>
+          <li onclick='filterByType("Football américain")'>
+            Football américain
+          </li>
+          <li onclick='filterByType("Football en salle")'>Football en salle</li>
+          <li onclick='filterByType("Fuzzball")'>Fuzzball</li>
+          <li onclick='filterByType("Futsal")'>Futsal</li>
+          <li onclick='filterByType("Golf")'>Golf</li>
+          <li onclick='filterByType("Gouren")'>Gouren</li>
+          <li onclick='filterByType("Grappling")'>Grappling</li>
+          <li onclick='filterByType("Gym +")'>Gym +</li>
+          <li onclick='filterByType("Gymnastique")'>Gymnastique</li>
+          <li onclick='filterByType("Gymnastique Acrobatique")'>
+            Gymnastique Acrobatique
+          </li>
+          <li onclick='filterByType("Gymnastique artistique")'>
+            Gymnastique artistique
+          </li>
+          <li onclick='filterByType("Gymnastique artistique féminine")'>
+            Gymnastique artistique féminine
+          </li>
+          <li onclick='filterByType("Gymnastique artistique masculine")'>
+            Gymnastique artistique masculine
+          </li>
+          <li onclick='filterByType("Gymnastique rythmique")'>
+            Gymnastique rythmique
+          </li>
+          <li onclick='filterByType("Handball")'>Handball</li>
+          <li onclick='filterByType("Handball tchèque")'>Handball tchèque</li>
+          <li onclick='filterByType("Handisport")'>Handisport</li>
+          <li onclick='filterByType("Hapkido")'>Hapkido</li>
+          <li onclick='filterByType("Haltérophilie")'>Haltérophilie</li>
+          <li onclick='filterByType("Hiking")'>Hiking</li>
+          <li onclick='filterByType("Hockey")'>Hockey</li>
+          <li onclick='filterByType("Hockey de rue")'>Hockey de rue</li>
+          <li onclick='filterByType("Hockey en salle")'>Hockey en salle</li>
+          <li onclick='filterByType("Hockey sur glace")'>Hockey sur glace</li>
+          <li onclick='filterByType("Hockey sur luge")'>Hockey sur luge</li>
+          <li onclick='filterByType("Hsing I Quan")'>Hsing I Quan</li>
+          <li onclick='filterByType("Iaido")'>Iaido</li>
+          <li onclick='filterByType("Jiu-jitsu brésilien")'>
+            Jiu-jitsu brésilien
+          </li>
+          <li onclick='filterByType("Jeet Kune Do")'>Jeet Kune Do</li>
+          <li onclick='filterByType("Jeux de cartes et de stratégie")'>
+            Jeux de cartes et de stratégie
+          </li>
+          <li onclick='filterByType("Jodo")'>Jodo</li>
+          <li onclick='filterByType("Judo")'>Judo</li>
+          <li onclick='filterByType("Jujutsu")'>Jujutsu</li>
+          <li onclick='filterByType("Karaté")'>Karaté</li>
+          <li onclick='filterByType("Karaté full contact")'>
+            Karaté full contact
+          </li>
+          <li onclick='filterByType("Karting")'>Karting</li>
+          <li onclick='filterByType("Kayak")'>Kayak</li>
+          <li onclick='filterByType("Kendo")'>Kendo</li>
+          <li onclick='filterByType("Kettlebell")'>Kettlebell</li>
+          <li onclick='filterByType("Kickboxing américain")'>
+            Kickboxing américain
+          </li>
+          <li onclick='filterByType("Kickboxing japonais")'>
+            Kickboxing japonais
+          </li>
+          <li onclick='filterByType("Kick-boxing")'>Kick-boxing</li>
+          <li onclick='filterByType("Kin-ball")'>Kin-ball</li>
+          <li onclick='filterByType("Kitesurf")'>Kitesurf</li>
+          <li onclick='filterByType("Korfball")'>Korfball</li>
+          <li onclick='filterByType("Krav Maga")'>Krav Maga</li>
+          <li onclick='filterByType("Kung Fu")'>Kung Fu</li>
+          <li onclick='filterByType("La Canne")'>La Canne</li>
+          <li onclick='filterByType("Longboard")'>Longboard</li>
+          <li onclick='filterByType("Luge")'>Luge</li>
+          <li onclick='filterByType("Lutte")'>Lutte</li>
+          <li onclick='filterByType("Lutte gréco-romaine")'>
+            Lutte gréco-romaine
+          </li>
+          <li onclick='filterByType("Lutte libre")'>Lutte libre</li>
+          <li onclick='filterByType("Marche")'>Marche</li>
+          <li onclick='filterByType("Marche athlétique")'>Marche athlétique</li>
+          <li onclick='filterByType("Marche nordique")'>Marche nordique</li>
+          <li onclick='filterByType("Model Aircraft")'>Aéromodélisme</li>
+          <li onclick='filterByType("MMA")'>MMA</li>
+          <li onclick='filterByType("Montgolfière")'>Montgolfière</li>
+          <li onclick='filterByType("Motonautisme")'>Motonautisme</li>
+          <li onclick='filterByType("Motocross")'>Motocross</li>
+          <li onclick='filterByType("Mountainboard")'>Mountainboard</li>
+          <li onclick='filterByType("Muay Thaï")'>Muay Thaï</li>
+          <li onclick='filterByType("Musculation")'>Musculation</li>
+          <li onclick='filterByType("Natation")'>Natation</li>
+          <li onclick='filterByType("Natation pour bébés")'>
+            Natation pour bébés
+          </li>
+          <li onclick='filterByType("Natation synchronisée")'>
+            Natation synchronisée
+          </li>
+          <li onclick='filterByType("Ninjutsu")'>Ninjutsu</li>
+          <li onclick='filterByType("Nouveau ski")'>Nouveau ski</li>
+          <li onclick='filterByType("Omnisport")'>Omnisport</li>
+          <li onclick='filterByType("Padel tennis")'>Padel tennis</li>
+          <li onclick='filterByType("Paddle")'>Paddle</li>
+          <li onclick='filterByType("Pancrace")'>Pancrace</li>
+          <li onclick='filterByType("Parachutisme")'>Parachutisme</li>
+          <li onclick='filterByType("Parapente")'>Parapente</li>
+          <li onclick='filterByType("Parkour")'>Parkour</li>
+          <li onclick='filterByType("Patinage artistique")'>
+            Patinage artistique
+          </li>
+          <li onclick='filterByType("Patinage de vitesse")'>
+            Patinage de vitesse
+          </li>
+          <li onclick='filterByType("Patinage de vitesse sur piste courte")'>
+            Patinage de vitesse sur piste courte
+          </li>
+          <li onclick='filterByType("Patinage sur glace")'>
+            Patinage sur glace
+          </li>
+          <li onclick='filterByType("Pêche")'>Pêche</li>
+          <li onclick='filterByType("Pelote basque")'>Pelote basque</li>
+          <li onclick='filterByType("Pentathlon moderne")'>
+            Pentathlon moderne
+          </li>
+          <li onclick='filterByType("Pétanque")'>Pétanque</li>
+          <li onclick='filterByType("Pilates")'>Pilates</li>
+          <li onclick='filterByType("Plongée en grotte")'>Plongée en grotte</li>
+          <li onclick='filterByType("Plongée sous-marine")'>
+            Plongée sous-marine
+          </li>
+          <li onclick='filterByType("Plongeon")'>Plongeon</li>
+          <li onclick='filterByType("Pole dance")'>Pole dance</li>
+          <li onclick='filterByType("Polo-vélo")'>Polo-vélo</li>
+          <li onclick='filterByType("Power hockey")'>Power hockey</li>
+          <li onclick='filterByType("Powerchair soccer")'>Powerchair soccer</li>
+          <li onclick='filterByType("Powerlifting")'>Powerlifting</li>
+          <li onclick='filterByType("Programme de musculation")'>
+            Programme de musculation
+          </li>
+          <li onclick='filterByType("Qi Gong")'>Qi Gong</li>
+          <li onclick='filterByType("Quilles au maillet")'>
+            Quilles au maillet
+          </li>
+          <li onclick='filterByType("Quilles de huit")'>Quilles de huit</li>
+          <li onclick='filterByType("Quilles de neuf classique")'>
+            Quilles de neuf classique
+          </li>
+          <li onclick='filterByType("Quilles de neuf schere")'>
+            Quilles de neuf schere
+          </li>
+          <li onclick='filterByType("Quilles de six")'>Quilles de six</li>
+          <li onclick='filterByType("Rallye")'>Rallye</li>
+          <li onclick='filterByType("Rallye raid")'>Rallye raid</li>
+          <li onclick='filterByType("Randonnée")'>Randonnée</li>
+          <li onclick='filterByType("Randonnée roller")'>Randonnée roller</li>
+          <li onclick='filterByType("Roliball")'>Roliball</li>
+          <li onclick='filterByType("Roller")'>Roller</li>
+          <li onclick='filterByType("Roller artistique")'>Roller artistique</li>
+          <li onclick='filterByType("Roller de vitesse")'>Roller de vitesse</li>
+          <li onclick='filterByType("Roller derby")'>Roller derby</li>
+          <li onclick='filterByType("Roller freeride/slalom")'>
+            Roller freeride/slalom
+          </li>
+          <li onclick='filterByType("Roller hockey")'>Roller hockey</li>
+          <li onclick='filterByType("Roller street/rampe/bowl")'>
+            Roller street/rampe/bowl
+          </li>
+          <li onclick='filterByType("Rugby")'>Rugby</li>
+          <li onclick='filterByType("Rugby à VII")'>Rugby à VII</li>
+          <li onclick='filterByType("Rugby à XIII")'>Rugby à XIII</li>
+          <li onclick='filterByType("Rugby fauteuil")'>Rugby fauteuil</li>
+          <li onclick='filterByType("Rugby fives")'>Rugby fives</li>
+          <li onclick='filterByType("Sabre laser")'>Sabre laser</li>
+          <li onclick='filterByType("Sambo")'>Sambo</li>
+          <li onclick='filterByType("Sanshou")'>Sanshou</li>
+          <li onclick='filterByType("Sarbacane")'>Sarbacane</li>
+          <li onclick='filterByType("Savate")'>Savate</li>
+          <li onclick='filterByType("Secourisme")'>Secourisme</li>
+          <li onclick='filterByType("Self-défense")'>Self-défense</li>
+          <li onclick='filterByType("Shuai Jiao")'>Shuai Jiao</li>
+          <li onclick='filterByType("Ski")'>Ski</li>
+          <li onclick='filterByType("Ski acrobatique")'>Ski acrobatique</li>
+          <li onclick='filterByType("Ski alpin")'>Ski alpin</li>
+          <li onclick='filterByType("Ski de fond")'>Ski de fond</li>
+          <li onclick='filterByType("Ski de randonnée")'>Ski de randonnée</li>
+          <li onclick='filterByType("Ski de vitesse")'>Ski de vitesse</li>
+          <li onclick='filterByType("Ski nautique")'>Ski nautique</li>
+          <li onclick='filterByType("Ski nautique pieds nus")'>
+            Ski nautique pieds nus
+          </li>
+          <li onclick='filterByType("Ski nordique")'>Ski nordique</li>
+          <li onclick='filterByType("Ski télémark")'>Ski télémark</li>
+          <li onclick='filterByType("Skimboard")'>Skimboard</li>
+          <li onclick='filterByType("Slackline")'>Slackline</li>
+          <li onclick='filterByType("Snowboard")'>Snowboard</li>
+          <li onclick='filterByType("Softball")'>Softball</li>
+          <li onclick='filterByType("Sport automobile")'>Sport automobile</li>
+          <li onclick='filterByType("Sport-boules")'>Sport-boules</li>
+          <li onclick='filterByType("Sports de bien-être")'>
+            Sports de bien-être
+          </li>
+          <li onclick='filterByType("Sports de boules")'>Sports de boules</li>
+          <li onclick='filterByType("Sports de danse")'>Sports de danse</li>
+          <li onclick='filterByType("Sports de glisse ou sports de glace")'>
+            Sports de glisse ou sports de glace
+          </li>
+          <li onclick='filterByType("Sports de plein air et de nature")'>
+            Sports de plein air et de nature
+          </li>
+          <li onclick='filterByType("Sports d&apos;équipe")'>
+            Sports d&apos;équipe
+          </li>
+          <li onclick='filterByType("Sports de raquette")'>
+            Sports de raquette
+          </li>
+          <li onclick='filterByType("Sports nautiques")'>Sports nautiques</li>
+          <li onclick='filterByType("Sports scolaires et universitaires")'>
+            Sports scolaires et universitaires
+          </li>
+          <li onclick='filterByType("Spéléologie")'>Spéléologie</li>
+          <li onclick='filterByType("Stand up paddle")'>Stand up paddle</li>
+          <li onclick='filterByType("Surf")'>Surf</li>
+          <li onclick='filterByType("Tai-chi-chuan")'>Tai-chi-chuan</li>
+          <li onclick='filterByType("Tamburello")'>Tamburello</li>
+          <li onclick='filterByType("Taekwondo")'>Taekwondo</li>
+          <li onclick='filterByType("Tchoukball")'>Tchoukball</li>
+          <li onclick='filterByType("TeamGym")'>TeamGym</li>
+          <li onclick='filterByType("Tennis")'>Tennis</li>
+          <li onclick='filterByType("Tennis de table")'>Tennis de table</li>
+          <li onclick='filterByType("Torball")'>Torball</li>
+          <li onclick='filterByType("Trail running")'>Trail running</li>
+          <li onclick='filterByType("Trampoline")'>Trampoline</li>
+          <li onclick='filterByType("Triathlon")'>Triathlon</li>
+          <li onclick='filterByType("Trottinette")'>Trottinette</li>
+          <li onclick='filterByType("Trot freestyle")'>Trot freestyle</li>
+          <li onclick='filterByType("TRX")'>TRX</li>
+          <li onclick='filterByType("Tumbling")'>Tumbling</li>
+          <li onclick='filterByType("Twirling")'>Twirling</li>
+          <li onclick='filterByType("ULM")'>ULM</li>
+          <li onclick='filterByType("Ultimate")'>Ultimate</li>
+          <li onclick='filterByType("Ultra trail")'>Ultra trail</li>
+          <li onclick='filterByType("Underwater Target Shooting")'>
+            Tir sur cible subaquatique
+          </li>
+          <li onclick='filterByType("VTT")'>VTT</li>
+          <li onclick='filterByType("Volley-ball")'>Volley-ball</li>
+          <li onclick='filterByType("Vol à voile")'>Vol à voile</li>
+          <li onclick='filterByType("Vol à voile motorisé")'>
+            Vol à voile motorisé
+          </li>
+          <li onclick='filterByType("Vol libre")'>Vol libre</li>
+          <li onclick='filterByType("Vovinam")'>Vovinam</li>
+          <li onclick='filterByType("Wakeboard")'>Wakeboard</li>
+          <li onclick='filterByType("Water-polo")'>Water-polo</li>
+          <li onclick='filterByType("Wing Chun")'>Wing Chun</li>
+          <li onclick='filterByType("Windsurf")'>Planche à voile</li>
+          <li onclick='filterByType("Wushu")'>Wushu</li>
+          <li onclick='filterByType("Yoga")'>Yoga</li>
+          <li onclick='filterByType("Yi Quan Dacheng Quan Tai Ki Ken")'>
+            Yi Quan Dacheng Quan Tai Ki Ken
+          </li>
+          <li onclick='filterByType("Zumba")'>Zumba</li>
+        </ul>
+      </div>
+      <div id="lieux" class="side-panel__content" style="display: none">
+        <ul>
+          <li onclick="filterByTag('Hauts-de-France')">Hauts-de-France</li>
+          <li onclick="filterByTag('Auvergne-Rhône-Alpes')">
+            Auvergne-Rhône-Alpes
+          </li>
+          <li onclick="filterByTag('Bourgogne-Franche-Comté')">
+            Bourgogne-Franche-Comté
+          </li>
+          <li onclick="filterByTag('Bretagne')">Bretagne</li>
+          <li onclick="filterByTag('Centre-Val de Loire')">
+            Centre-Val de Loire
+          </li>
+          <li onclick="filterByTag('Corse')">Corse</li>
+          <li onclick="filterByTag('France métropolitaine')">
+            France métropolitaine
+          </li>
+          <li onclick="filterByTag('Grand Est')">Grand Est</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay" onclick="closeMenus()"></div>
+
+    <script>
+      const NORMAL_ZINDEX = 1;
+      const HIGHLIGHT_ZINDEX = 100;
+
+      let debouncedLocalitiesAutocomplete;
+      let currentFilter = "All";
+      let currentTag = null;
+      let currentType = null;
+      let currentLocation = null;
+      let markersMap = new Map();
+
+      let infoWindow = null;
+      let expandedBounds = null;
+
+      function openMenu() {
+        document.getElementById("side-panel").style.width = "300px";
+        document.getElementById("overlay").style.display = "block";
+      }
+
+      function openFilterMenu() {
+        document.getElementById("filter-side-panel").style.width = "300px";
+        document.getElementById("overlay").style.display = "block";
+      }
+
+      function closeMenus() {
+        document.getElementById("side-panel").style.width = "0";
+        document.getElementById("filter-side-panel").style.width = "0";
+        document.getElementById("overlay").style.display = "none";
+      }
+
+      function showTab(tabName) {
+        const sportsTab = document.getElementById("sports");
+        const lieuxTab = document.getElementById("lieux");
+        if (tabName === "sports") {
+          sportsTab.style.display = "block";
+          lieuxTab.style.display = "none";
+        } else {
+          sportsTab.style.display = "none";
+          lieuxTab.style.display = "block";
+        }
+      }
+
+      function filterByType(value) {
+        console.log("Filtering Type by:", value);
+        closeMenus();
+        currentType = value;
+        updateFilterButtons();
+        loadStores();
+      }
+
+      function filterByTag(value) {
+        console.log("Filtering Tag by:", value);
+        closeMenus();
+        currentTag = value;
+        updateFilterButtons();
+        loadStores();
+      }
+
+      function geolocate() {
+        console.log("Geolocating user");
+        const requestOptions = {
+          method: "GET",
+          redirect: "follow",
+        };
+
+        fetch(
+          `https://api.woosmap.com/geolocation/position?key=${woosmapKey}`,
+          requestOptions
+        )
+          .then((response) => response.json())
+          .then((result) => {
+            initalLocation = new woosmap.map.LatLng(
+              result.latitude,
+              result.longitude
+            );
+
+            if (result.country_code == "GB") {
+              initalLocation = new woosmap.map.LatLng(50.9515, 1.8613);
+            }
+            window.storesOverlay.setMap(window.map);
+            window.map.flyTo({
+              center: initalLocation,
+              zoom: 12,
+              animate: true,
+              duration: 5000,
+            });
+            console.log("Initial location:", initalLocation);
+          })
+          .catch((error) => console.log("Error fetching geolocation:", error));
+      }
+
+      function initMap() {
+        const center = {
+          lat: 46.42762885082139,
+          lng: 1.9074891637150665,
+        };
+
+        const map = new woosmap.map.Map(document.getElementById("map"), {
+          zoom: 6.7,
+          center: center,
+          styles: [
+            {
+              elementType: "geometry",
+              stylers: [{ color: "#f6f6f6" }],
+            },
+            {
+              elementType: "labels.icon",
+              stylers: [{ visibility: "off" }],
+            },
+            {
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#616161" }],
+            },
+            {
+              elementType: "labels.text.stroke",
+              stylers: [{ color: "#f5f5f5" }],
+            },
+            {
+              featureType: "administrative.land_parcel",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#bdbdbd" }],
+            },
+            {
+              featureType: "road",
+              elementType: "geometry",
+              stylers: [{ color: "#ffffff" }],
+            },
+            {
+              featureType: "road.arterial",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#757575" }],
+            },
+            {
+              featureType: "road.highway",
+              elementType: "geometry",
+              stylers: [{ color: "#dadada" }],
+            },
+            {
+              featureType: "road.highway",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#616161" }],
+            },
+            {
+              featureType: "road.local",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#9e9e9e" }],
+            },
+            {
+              featureType: "transit.line",
+              elementType: "geometry",
+              stylers: [{ color: "#e5e5e5" }],
+            },
+            {
+              featureType: "transit.station",
+              elementType: "geometry",
+              stylers: [{ color: "#eeeeee" }],
+            },
+            {
+              featureType: "water",
+              elementType: "geometry",
+              stylers: [{ color: "#c9c9c9" }],
+            },
+            {
+              featureType: "water",
+              elementType: "labels.text.fill",
+              stylers: [{ color: "#9e9e9e" }],
+            },
+          ],
+        });
+        window.map = map;
+
+        const style = {
+          breakPoint: 13,
+          rules: [],
+
+          default: {
+            color: "#3c4c58",
+            size: 6,
+            minSize: 2,
+            icon: {
+              url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/default.svg",
+              scaledSize: {
+                height: 36,
+                width: 36,
+              },
+              anchor: {
+                x: 18,
+                y: 18,
+              },
+            },
+            selectedIcon: {
+              url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/selected.svg",
+              scaledSize: {
+                height: 36,
+                width: 36,
+              },
+              anchor: {
+                x: 18,
+                y: 18,
+              },
+            },
+          },
+        };
+
+        window.directionsService = new woosmap.map.DirectionsService();
+        window.directionsRenderer = new woosmap.map.DirectionsRenderer();
+        window.localitiesService = new woosmap.map.LocalitiesService();
+        window.storesService = new woosmap.map.StoresService();
+        debouncedLocalitiesAutocomplete = debouncePromise(
+          window.localitiesService.autocomplete,
+          300
+        );
+        window.storesOverlay = new woosmap.map.StoresOverlay(style);
+        console.log("Stores overlay:", window.storesOverlay);
+
+        // Configure the click listener.
+        window.woosmap.map.event.addListener(
+          map,
+          "store_selected",
+          (storeGeoJSON) => {
+            console.log("storeGeoJSON", storeGeoJSON);
+
+            const getAddress = (store) =>
+              `${store.address.lines}, ${store.address.zipcode} ${store.address.city}`;
+            // const getPhone = (store) =>
+            //   `Phone: <a href='${store.contact.phone}'>${store.contact.phone}</a>`;
+
+            const getTypes = (store) => {
+              return store.types.map((type) => type).join(", ");
+            };
+
+            function getStoreHTML(store) {
+              return `<div>
+                        <span><strong>${store.name}</strong></span>
+                        <p>${getAddress(store)}</p>
+                        <p>${getTypes(store)}</p>
+                      </div>`;
+            }
+
+            // <span>${getPhone(store)}</span>
+            const position = new woosmap.map.LatLng(
+              storeGeoJSON.geometry.coordinates[1],
+              storeGeoJSON.geometry.coordinates[0]
+            );
+            infoWindow.setOffset(new woosmap.map.Point(0, -20));
+            infoWindow.setContent(getStoreHTML(storeGeoJSON.properties));
+            infoWindow.open(window.map, position);
+          }
+        );
+
+        infoWindow = new woosmap.map.InfoWindow({});
+
+        // window.map.addListener("click", (event) => {
+        //   console.log("Map clicked at:", event);
+        //   const infoElement = document.getElementById("info");
+
+        //   infoElement.innerHTML = "";
+        // });
+
+        const input = document.getElementById("location");
+        input.focus();
+        geolocate();
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        storeDataElement = document.getElementById("store-data");
+        woosmapKey = storeDataElement.getAttribute("data-woosmap-key");
+        var script = document.createElement("script");
+        script.src = `https://sdk.woosmap.com/map/map.js?key=${woosmapKey}&callback=initMap`;
+        script.defer = true;
+        document.body.appendChild(script);
+      });
+
+      function fetchLocalityDetails(publicId) {
+        const detailsRequest = {
+          publicId: publicId,
+          language: "FR",
+        };
+
+        if (window.marker && typeof window.marker.setMap === "function") {
+          window.marker.setMap(null);
+        }
+
+        localitiesService
+          .getDetails(detailsRequest)
+          .then((response) => {
+            const location = response.result.geometry.location;
+            filterLocation(location);
+            window.marker = new woosmap.map.Marker({
+              position: location,
+              icon: {
+                url: "https://images.woosmap.com/marker.png",
+                scaledSize: {
+                  height: 50,
+                  width: 32,
+                },
+              },
+            });
+            window.marker.setMap(window.map);
+          })
+          .catch((error) => {
+            console.error("Error fetching locality details:", error);
+          });
+      }
+
+      const practiceMarkersMap = new Map(); // Create a map to store practice markers
+
+      function loadStores() {
+        console.log("loadStores currentLocation:", currentLocation);
+        console.log("loadStores currentTag:", currentTag);
+        console.log("loadStores currentType:", currentType);
+
+        let storesSearchRequest = null;
+        let queryParts = [];
+
+        directionsRenderer.setDirections(null);
+        directionsRenderer.setMap(null);
+
+        clearMarkers();
+
+        if (
+          currentLocation === null &&
+          currentTag === null &&
+          currentType === null
+        ) {
+          console.log("No filters applied, showing all stores");
+          storesSearchRequest = {
+            latLng: initalLocation,
+            query: "",
+          };
+          queryParts.push(`tag:"HQ"`);
+          storesSearchRequest.query = queryParts.join(" AND ");
+          window.storesOverlay.setQuery(storesSearchRequest.query);
+
+          window.storesOverlay.setMap(map);
+
+          window.map.flyTo({
+            center: initalLocation,
+            zoom: 12,
+            animate: true, // Optional: if you want to animate the transition
+            duration: 3000, // Optional: duration of the animation in milliseconds
+          });
+          return;
+        }
+
+        console.log("Current location:", currentLocation);
+        console.log("Inital location:", initalLocation);
+
+        let tempLocation = currentLocation ? currentLocation : initalLocation;
+
+        storesSearchRequest = {
+          latLng: tempLocation,
+          query: "",
+        };
+
+        queryParts.push(`tag:"HQ"`);
+
+        if (currentTag) {
+          queryParts.push(`tag:"${currentTag}"`);
+        }
+
+        if (currentType) {
+          queryParts.push(`type:"${currentType}"`);
+        }
+
+        if (queryParts.length > 0) {
+          storesSearchRequest.query = queryParts.join(" AND ");
+        }
+
+        console.log("Stores search request:", storesSearchRequest);
+        window.storesOverlay.setMap(null);
+
+        window.storesOverlay.setQuery(storesSearchRequest.query);
+
+        window.storesService
+          .search(storesSearchRequest)
+          .then((response) => {
+            console.log("Stores search response:", response);
+            return window.storesService
+              .getBounds(storesSearchRequest)
+              .then((boundsResponse) => ({
+                bounds: boundsResponse.bounds,
+                features: response.features,
+              }));
+          })
+          .then(({ bounds, features }) => {
+            let calculatedBounds =
+              currentLocation !== null
+                ? calculateLatLngBounds(features, currentLocation)
+                : calculateLatLngBounds(features);
+
+            expandedBounds = expandBoundsIfNeeded(calculatedBounds);
+
+            // window.map.fitBounds(
+            //   expandedBounds,
+            //   { bottom: 100, left: 300, right: 100, top: 100 },
+            //   true
+            // );
+
+            adjustMapBounds();
+
+            const clubList = document.getElementById("club-list");
+            clubList.style.display = "block";
+            clubList.innerHTML = "";
+
+            const stores = features.slice(0, 100);
+
+            stores.forEach((store) => {
+              const storeDiv = document.createElement("div");
+              storeDiv.classList.add("club-list__store");
+              const storeId = store.properties.store_id;
+              storeDiv.dataset.storeId = storeId;
+              clubList.appendChild(storeDiv);
+
+              // Create container for the image and details
+              const storeContainer = document.createElement("div");
+              storeContainer.classList.add("club-list__store__container");
+              storeDiv.appendChild(storeContainer);
+
+              // Add image placeholder
+              const storeImage = document.createElement("img");
+              storeImage.src = "https://via.placeholder.com/50"; // Placeholder image URL
+              storeImage.alt = "Store Image";
+              storeImage.classList.add("club-list__store__image");
+              storeContainer.appendChild(storeImage);
+
+              // Create details div
+              const storeDetails = document.createElement("div");
+              storeDetails.classList.add("club-list__store__details");
+              storeContainer.appendChild(storeDetails);
+
+              const storeName = store.properties.name;
+              const storeNameElement = document.createElement("p");
+              storeNameElement.style.fontSize = "14px";
+              storeNameElement.textContent = storeName;
+              storeDetails.appendChild(storeNameElement);
+
+              const storeCoordinates = store.geometry.coordinates;
+              storeDiv.dataset.coordinates = storeCoordinates;
+
+              const storeSports = store.properties.types;
+              const storeSportsElement = document.createElement("p");
+              storeSportsElement.style.color = "grey";
+              storeSportsElement.style.fontSize = "12px";
+              storeSportsElement.textContent = storeSports.join(", ");
+              storeDetails.appendChild(storeSportsElement);
+
+              const storeAddress = store.properties.address.lines.join(", ");
+              storeDiv.dataset.address = storeAddress;
+              const storeAddressElement = document.createElement("p");
+              storeAddressElement.textContent = storeAddress;
+              storeDetails.appendChild(storeAddressElement);
+
+              if (store.properties.distance) {
+                const storeDistance = store.properties.distance;
+                storeDiv.dataset.distance = storeDistance;
+                const storeDistanceElement = document.createElement("p");
+                const storeDistanceInMiles = storeDistance / 1000;
+                storeDistanceElement.textContent = `${storeDistanceInMiles.toFixed(
+                  1
+                )} Km`;
+                storeDetails.appendChild(storeDistanceElement);
+              }
+
+              const practiceMarkers = []; // Array to hold practice markers
+
+              // Check for practice addresses and create markers
+              if (
+                store.properties.user_properties &&
+                store.properties.user_properties.practice_addresses
+              ) {
+                store.properties.user_properties.practice_addresses.forEach(
+                  (practiceAddress) => {
+                    const practiceAddressElement = document.createElement("p");
+                    practiceAddressElement.textContent =
+                      practiceAddress.address;
+                    storeDetails.appendChild(practiceAddressElement);
+
+                    // Create marker for practice address
+                    const practiceMarker = new woosmap.map.Marker({
+                      position: new woosmap.map.LatLng(
+                        practiceAddress.location.lat,
+                        practiceAddress.location.lng
+                      ),
+                      map: null, // Initially, do not add to the map
+                      icon: {
+                        url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/selected.svg",
+                        scaledSize: { height: 36, width: 36 },
+                        anchor: { x: 18, y: 18 },
+                      },
+                      zIndex: NORMAL_ZINDEX,
+                    });
+
+                    practiceMarkers.push(practiceMarker);
+                  }
+                );
+                practiceMarkersMap.set(storeId, practiceMarkers); // Store practice markers
+              }
+
+              const storeDirections = document.createElement("div");
+              storeDirections.classList.add("club-list__store__button");
+              const storeRouteElement = document.createElement("button");
+              storeRouteElement.textContent = "Vers le club";
+              storeRouteElement.onclick = function () {
+                showRoute(storeCoordinates);
+              };
+              storeDirections.appendChild(storeRouteElement);
+              storeDiv.appendChild(storeDirections);
+              const marker = new woosmap.map.Marker({
+                position: new woosmap.map.LatLng(
+                  storeCoordinates[1],
+                  storeCoordinates[0]
+                ),
+                map: window.map,
+                icon: {
+                  url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/default.svg",
+                  scaledSize: { height: 36, width: 36 },
+                  anchor: { x: 18, y: 18 },
+                },
+                zIndex: NORMAL_ZINDEX,
+              });
+
+              marker.addListener("click", () => {
+                selectStore(storeId);
+                // highlightMarker(storeId);
+              });
+
+              markersMap.set(storeId, marker);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching stores or getting bounds:", error);
+          });
+      }
+
+      function calculateLatLngBounds(stores, location) {
+        const bounds = new woosmap.map.LatLngBounds();
+
+        stores.forEach((store) => {
+          bounds.extend(
+            new woosmap.map.LatLng(
+              store.geometry.coordinates[1],
+              store.geometry.coordinates[0]
+            )
+          );
+        });
+
+        if (typeof location !== "undefined") {
+          bounds.extend(currentLocation);
+        }
+
+        return bounds;
+      }
+
+      function expandBoundsIfNeeded(bounds) {
+        const MIN_DIFF = 0.02;
+        let north = bounds._latRange.max;
+        let south = bounds._latRange.min;
+        let east = bounds._lngRange.max;
+        let west = bounds._lngRange.min;
+
+        if (Math.abs(east - west) < MIN_DIFF) {
+          west -= MIN_DIFF / 2;
+          east += MIN_DIFF / 2;
+        }
+        if (Math.abs(north - south) < MIN_DIFF) {
+          south -= MIN_DIFF / 2;
+          north += MIN_DIFF / 2;
+        }
+
+        const expandedBounds = new woosmap.map.LatLngBounds();
+        expandedBounds.extend(new woosmap.map.LatLng(north, east));
+        expandedBounds.extend(new woosmap.map.LatLng(south, west));
+
+        return expandedBounds;
+      }
+
+      function filterLocation(location) {
+        console.log("filterLocation:", location);
+        currentFilter = "Location";
+        currentLocation = location;
+        loadStores();
+      }
+
+      function debouncePromise(fn, delay) {
+        let timeoutId = null;
+        let latestResolve = null;
+        let latestReject = null;
+
+        return function (...args) {
+          return new Promise((resolve, reject) => {
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+            }
+
+            latestResolve = resolve;
+            latestReject = reject;
+            timeoutId = setTimeout(() => {
+              fn(...args)
+                .then((result) => {
+                  if (latestResolve === resolve && latestReject === reject) {
+                    resolve(result);
+                  }
+                })
+                .catch((error) => {
+                  if (latestResolve === resolve && latestReject === reject) {
+                    reject(error);
+                  }
+                });
+            }, delay);
+          });
+        };
+      }
+
+      function showRoute(coordinates) {
+        coordinates = new woosmap.map.LatLng(coordinates[1], coordinates[0]);
+
+        directionsRenderer.setMap(window.map);
+        directionsService.route(
+          {
+            origin: currentLocation,
+            destination: coordinates,
+          },
+          (response, status) => {
+            if (status === "OK") {
+              directionsRenderer.setDirections(response);
+            } else {
+              console.log("Directions request failed with status :" + status);
+            }
+          }
+        );
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var locationInput = document.getElementById("location");
+
+        locationInput.addEventListener("input", function () {
+          const autocompleteRequest = {
+            input: this.value,
+            types: ["locality", "address", "postal_code"],
+            language: "fr",
+            components: { country: ["FR"] },
+          };
+
+          var searchQuery = this.value;
+
+          const suggestionsContainer = document.getElementById(
+            "autocompleteSuggestions"
+          );
+
+          suggestionsContainer.style.display = "none";
+
+          if (autocompleteRequest.input.trim().length > 2) {
+            debouncedLocalitiesAutocomplete(autocompleteRequest)
+              .then((response) => {
+                suggestionsContainer.innerHTML = "";
+                suggestionsContainer.style.display = "block";
+
+                response.localities.forEach((locality, index) => {
+                  const suggestionDiv = document.createElement("div");
+                  suggestionDiv.textContent = locality.description;
+                  if (index === 0) {
+                    suggestionDiv.classList.add(
+                      "gruddo__search__form__autocomplete__highlight"
+                    );
+                  }
+                  suggestionDiv.addEventListener("click", () => {
+                    document.getElementById("location").value =
+                      locality.description;
+                    suggestionsContainer.innerHTML = "";
+                    fetchLocalityDetails(locality.public_id);
+                  });
+                  suggestionsContainer.appendChild(suggestionDiv);
+                });
+              })
+              .catch((error) => {
+                console.error(error);
+              });
+
+            locationInput.addEventListener("keydown", function (event) {
+              const suggestionsContainer = document.getElementById(
+                "autocompleteSuggestions"
+              );
+              if (event.key === "Enter") {
+                console.log("Enter key pressed");
+                event.preventDefault(); // Prevent form submission
+
+                const firstSuggestion =
+                  suggestionsContainer.querySelector("div");
+                if (firstSuggestion) {
+                  firstSuggestion.click(); // Simulate click on the first suggestion
+                }
+              }
+            });
+          }
+        });
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var locationForm = document.getElementById("location-search");
+
+        locationForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var searchQuery = document.getElementById("location").value;
+        });
+      });
+
+      document
+        .getElementById("location")
+        .addEventListener("input", function () {
+          const clearBtn = document.getElementById("clearInput");
+          if (this.value.length > 0) {
+            clearBtn.style.display = "block";
+          } else {
+            clearBtn.style.display = "none";
+          }
+        });
+
+      document
+        .getElementById("location")
+        .addEventListener("focus", function () {
+          this.select();
+        });
+
+      document
+        .getElementById("clearInput")
+        .addEventListener("click", function () {
+          currentLocation = null;
+          const clubList = document.getElementById("club-list");
+          clubList.style.display = "none";
+          const input = document.getElementById("location");
+          input.value = "";
+          this.style.display = "none";
+          const suggestionsContainer = document.getElementById(
+            "autocompleteSuggestions"
+          );
+          suggestionsContainer.innerHTML = "";
+          suggestionsContainer.style.display = "block";
+
+          input.focus();
+
+          // if (window.marker && typeof window.marker.setMap === "function") {
+          //   console.log("Clearing marker");
+          //   window.marker.setMap(null);
+          // }
+          loadStores();
+        });
+
+      let currentHighlightedStore = null;
+
+      document
+        .getElementById("club-list")
+        .addEventListener("mouseover", (event) => {
+          const storeElement = event.target.closest(".club-list__store");
+          if (storeElement && storeElement !== currentHighlightedStore) {
+            if (currentHighlightedStore) {
+              currentHighlightedStore.classList.remove("active");
+              resetMarker(currentHighlightedStore.dataset.storeId);
+            }
+            storeElement.classList.add("active");
+            const storeId = storeElement.dataset.storeId;
+            highlightMarker(storeId);
+            currentHighlightedStore = storeElement;
+          }
+        });
+
+      document
+        .getElementById("club-list")
+        .addEventListener("click", (event) => {
+          const storeElement = event.target.closest(".club-list__store");
+          if (storeElement) {
+            const storeId = storeElement.dataset.storeId;
+            selectStore(storeId);
+          }
+        });
+
+      function highlightMarker(storeId) {
+        const marker = markersMap.get(storeId);
+        if (marker) {
+          marker.setIcon({
+            url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/selected.svg",
+            scaledSize: { height: 48, width: 48 },
+            anchor: { x: 24, y: 24 },
+          });
+          marker.setZIndex(HIGHLIGHT_ZINDEX); // Set higher z-index
+        }
+
+        // Show practice markers
+        const practiceMarkers = practiceMarkersMap.get(storeId);
+        if (practiceMarkers) {
+          practiceMarkers.forEach((practiceMarker) => {
+            practiceMarker.setMap(window.map);
+          });
+        }
+
+        // Recalculate bounds to include the main marker and practice markers
+        const bounds = new woosmap.map.LatLngBounds();
+        bounds.extend(marker.getPosition());
+
+        if (practiceMarkers) {
+          practiceMarkers.forEach((practiceMarker) => {
+            bounds.extend(practiceMarker.getPosition());
+          });
+        }
+        // Use expandBoundsIfNeeded to adjust the bounds
+        expandedBounds = expandBoundsIfNeeded(bounds);
+        // window.map.fitBounds(
+        //   expandedBounds,
+        //   { bottom: 100, left: 300, right: 100, top: 100 },
+        //   true
+        // );
+        adjustMapBounds();
+      }
+
+      function clearMarkers() {
+        if (window.marker && typeof window.marker.setMap === "function") {
+          window.marker.setMap(null);
+        }
+        markersMap.forEach((marker) => {
+          marker.setMap(null);
+        });
+        markersMap.clear();
+
+        practiceMarkersMap.forEach((markers) => {
+          markers.forEach((marker) => {
+            marker.setMap(null);
+          });
+        });
+        practiceMarkersMap.clear();
+      }
+
+      function resetMarker(storeId) {
+        const marker = markersMap.get(storeId);
+        if (marker) {
+          marker.setIcon({
+            url: "https://webapp-conf.woosmap.com/woos-0c78592f-13ea-362b-aa07-ba4ba9ea3dae/default.svg",
+            scaledSize: { height: 36, width: 36 },
+            anchor: { x: 18, y: 18 },
+          });
+          marker.setZIndex(NORMAL_ZINDEX); // Reset to normal z-index
+        }
+
+        // Hide practice markers
+        const practiceMarkers = practiceMarkersMap.get(storeId);
+        if (practiceMarkers) {
+          practiceMarkers.forEach((practiceMarker) => {
+            practiceMarker.setMap(null);
+          });
+        }
+      }
+
+      function selectStore(storeId) {
+        console.log(`Store with ID ${storeId} clicked`);
+
+        // Remove the selected class from all stores
+        // document.querySelectorAll(".club-list__store").forEach((store) => {
+        //   store.classList.remove("active");
+        // });
+
+        // const storeElement = event.target.closest(".club-list__store");
+        const storeElement = document.querySelector(
+          `.club-list__store[data-store-id="${storeId}"]`
+        );
+
+        if (storeElement && storeElement !== currentHighlightedStore) {
+          if (currentHighlightedStore) {
+            currentHighlightedStore.classList.remove("active");
+            resetMarker(currentHighlightedStore.dataset.storeId);
+          }
+          storeElement.classList.add("active");
+          storeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          const storeId = storeElement.dataset.storeId;
+          highlightMarker(storeId);
+          currentHighlightedStore = storeElement;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        updateFilterButtons();
+      });
+
+      function updateFilterButtons() {
+        const typeButton = document.getElementById("typeButton");
+        const typeButtonText = document.getElementById("typeButtonText");
+        const tagButton = document.getElementById("tagButton");
+        const tagButtonText = document.getElementById("tagButtonText");
+
+        if (currentType) {
+          typeButtonText.textContent = currentType;
+          typeButton.style.display = "flex";
+        } else {
+          typeButton.style.display = "none";
+        }
+
+        if (currentTag) {
+          tagButtonText.textContent = currentTag;
+          tagButton.style.display = "flex";
+        } else {
+          tagButton.style.display = "none";
+        }
+      }
+
+      function clearCurrentType() {
+        console.log("Clearing current type");
+        currentType = null;
+        updateFilterButtons();
+        const clubList = document.getElementById("club-list");
+        clubList.style.display = "none";
+        loadStores();
+      }
+
+      function clearCurrentTag() {
+        currentTag = null;
+        updateFilterButtons();
+        loadStores();
+      }
+
+      function getLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+          alert("Geolocation is not supported by this browser.");
+        }
+      }
+
+      function showPosition(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const location = { lat: latitude, lng: longitude };
+        currentLocation = location;
+        if (window.marker && typeof window.marker.setMap === "function") {
+          window.marker.setMap(null); // Remove the previous marker
+        }
+
+        filterLocation(location); // Filter the map based on the selected locality
+
+        window.marker = new woosmap.map.Marker({
+          position: location,
+          icon: {
+            url: "https://images.woosmap.com/marker.png",
+            scaledSize: {
+              height: 50,
+              width: 32,
+            },
+          },
+        });
+
+        window.marker.setMap(window.map);
+
+        // loadStores("Location");
+      }
+
+      function showError(error) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert("User denied the request for Geolocation.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable.");
+            break;
+          case error.TIMEOUT:
+            alert("The request to get user location timed out.");
+            break;
+          case error.UNKNOWN_ERROR:
+            alert("An unknown error occurred.");
+            break;
+        }
+      }
+
+      function searchHere() {
+        currentLocation = map.getCenter();
+        loadStores();
+      }
+
+      let lastChar = "";
+      let lastIndex = -1;
+
+      document.addEventListener("keyup", function (event) {
+        let input = event.key.toUpperCase();
+        let ul = document.querySelector("#sports ul");
+        let li = ul.getElementsByTagName("li");
+
+        if (input === lastChar) {
+          lastIndex = (lastIndex + 1) % li.length;
+        } else {
+          lastChar = input;
+          lastIndex = -1;
+        }
+
+        for (let i = lastIndex + 1; i < li.length; i++) {
+          let txtValue = li[i].textContent || li[i].innerText;
+          if (txtValue.toUpperCase().startsWith(input)) {
+            li[i].scrollIntoView();
+            li[i].classList.add("highlight");
+            setTimeout(() => {
+              li[i].classList.remove("highlight");
+            }, 100);
+            lastIndex = i;
+            return;
+          }
+        }
+
+        for (let i = 0; i <= lastIndex; i++) {
+          let txtValue = li[i].textContent || li[i].innerText;
+          if (txtValue.toUpperCase().startsWith(input)) {
+            li[i].scrollIntoView();
+            li[i].classList.add("highlight");
+            setTimeout(() => {
+              li[i].classList.remove("highlight");
+            }, 100);
+            lastIndex = i;
+            return;
+          }
+        }
+      });
+
+      // Optionally, listen for window resize events to adjust bounds dynamically
+      window.addEventListener("resize", adjustMapBounds);
+
+      function adjustMapBounds() {
+        if (window.innerWidth < 1024) {
+          window.map.fitBounds(
+            expandedBounds,
+            { bottom: 25, left: 25, right: 25, top: 25 },
+            true
+          );
+        } else {
+          window.map.fitBounds(
+            expandedBounds,
+            { bottom: 100, left: 300, right: 100, top: 100 },
+            true
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
